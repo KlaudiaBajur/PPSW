@@ -1,0 +1,51 @@
+#include "led.h"
+#include "timer_interrupts.h"
+#include "keyboard.h"
+
+
+enum LedState{LED_STOP,LED_LEFT,LED_RIGHT};
+enum LedState eLedState = LED_STOP;
+
+void Automat(){
+		
+	switch(eLedState){
+			
+		case LED_STOP: 
+			if(eKeyboardRead()==BUTTON_0){
+				eLedState = LED_LEFT;
+			}
+			else if(eKeyboardRead() == BUTTON_2){
+				eLedState = LED_RIGHT;
+			}
+			break;
+				
+		case LED_LEFT: 
+			if(eKeyboardRead()==BUTTON_1){
+				eLedState = LED_STOP;
+			}
+			else{
+				LedStepLeft();
+			}
+			break;
+				
+		case LED_RIGHT:
+			if(eKeyboardRead()==BUTTON_1){
+				eLedState = LED_STOP;
+			}
+			else{
+				LedStepRight();
+			}
+			break;
+	}	
+}
+
+int main (){
+	unsigned int iMainLoopControl;
+	LedInit();
+	KeyboardInit();
+	Timer0Interrupts_Init(250000,&Automat);
+
+	while(1){
+	 	iMainLoopControl++;
+	}
+}
