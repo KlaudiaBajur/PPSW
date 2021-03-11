@@ -1,0 +1,28 @@
+enum CompResult {DIFFERENT, EQUAL};
+unsigned char a = 2;
+enum CompResult eCompareString(char pcStr1[], char pcStr2[]){
+	
+	unsigned char ucCounter;
+	for(ucCounter = 0; pcStr1[ucCounter] > 0; ucCounter++){
+		if(pcStr1[ucCounter] != pcStr2[ucCounter]) {
+			a = 0;
+      return DIFFERENT;
+    }
+	}
+	if(pcStr1[ucCounter] != pcStr2[ucCounter]) {
+		a = 0;
+    return DIFFERENT;
+  }
+		a = 0;
+	return EQUAL;
+}
+
+
+int iOdp = 2;
+char cStr1[] = "Nati";
+char cStr2[] = "Nati";
+int main()
+{
+	if (eCompareString(cStr1, cStr2) == 0) iOdp = DIFFERENT;
+	if (eCompareString(cStr1, cStr2) == 1) iOdp = EQUAL;
+}
