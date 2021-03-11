@@ -1,0 +1,24 @@
+void CopyString(char pcSource[], char pcDestination[]){
+
+    unsigned char ucCounter;
+    for(ucCounter = 0; pcSource[ucCounter] > 0; ucCounter++){
+		pcDestination[ucCounter] = pcSource[ucCounter];
+	}
+	pcDestination[ucCounter] = pcSource[ucCounter];
+}
+
+void AppendString (char pcSourceStr[],char pcDestinationStr[]){
+
+	unsigned char ucCounter;
+	for(ucCounter = 0; pcDestinationStr[ucCounter] > 0; ++ucCounter){};
+    CopyString(pcSourceStr, pcDestinationStr + ucCounter);
+}
+
+
+
+char cSource[] = "Bajur";
+char cDestination[127] = "Klaudia";
+int main()
+{
+	AppendString(cSource, cDestination);
+}
