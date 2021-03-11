@@ -1,0 +1,17 @@
+#include <LPC21xx.H>
+
+void CopyString(char pcSource[], char pcDestination[]){
+
+    unsigned char ucCounter;
+    for(ucCounter = 0; pcSource[ucCounter] > 0; ucCounter++){
+		pcDestination[ucCounter] = pcSource[ucCounter];
+	}
+	pcDestination[ucCounter] = pcSource[ucCounter];
+}
+
+char pcSource[] = "Bajur";
+char pcDestination[] = "Klaudia";
+int main()
+{
+	CopyString(pcSource, pcDestination);
+}
