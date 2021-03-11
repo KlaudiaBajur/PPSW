@@ -1,0 +1,20 @@
+void ReplaceCharactersInString(char pcString[],char cOldChar,char cNewChar){
+
+	unsigned char ucCounter;
+	for(ucCounter = 0; pcString[ucCounter] > 0; ++ucCounter){
+		if(pcString[ucCounter] == cOldChar){
+			pcString[ucCounter] = cNewChar;
+		}
+	}
+}
+
+
+char old = 'a';
+char nowe = 'B';
+char pcString[127] = "klaudia";
+
+int main()
+{
+	ReplaceCharactersInString(pcString, old, nowe);
+	while(1);
+}
