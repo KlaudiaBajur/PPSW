@@ -1,4 +1,7 @@
+#include <LPC21xx.H>
+  
 enum CompResult {DIFFERENT, EQUAL};
+
 enum CompResult eCompareString(char pcStr1[], char pcStr2[]){
 
 	unsigned char ucCounter;
