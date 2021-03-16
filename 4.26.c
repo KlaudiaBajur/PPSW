@@ -37,9 +37,9 @@ void LedOn(unsigned char uc_Nr_LED){
 
 enum ButtonState eKeyboardRead(){
 	if ((IO0PIN & S0_bm) == 0) return BUTTON_0;
-	if ((IO0PIN & S1_bm) == 0) return BUTTON_1;
-	if ((IO0PIN & S2_bm) == 0) return BUTTON_2;
-	if ((IO0PIN & S3_bm) == 0) return BUTTON_3;
+	else if ((IO0PIN & S1_bm) == 0) return BUTTON_1;
+	else if ((IO0PIN & S2_bm) == 0) return BUTTON_2;
+	else if ((IO0PIN & S3_bm) == 0) return BUTTON_3;
 	else return RELASED;
 }
 
