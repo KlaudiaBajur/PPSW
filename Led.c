@@ -6,7 +6,7 @@
 #define LED2_bm 	 (1<<18)
 #define LED3_bm 	 (1<<19)
 
-enum Step{LEFT, RIGHT};
+enum StepsLeds{ToLeft, ToRight};
 
 void LedInit(){
   IO1DIR = (IO1DIR | LED0_bm | LED1_bm | LED2_bm | LED3_bm);
@@ -29,10 +29,10 @@ void LedOn(unsigned char uc_Nr_LED){
 
 void LedStep(enum StepsLeds eDirection){
 	static unsigned int suiTurnToSide;
-	if (eKierunek == ToLeft){
+	if (eDirection == ToLeft){
 		suiTurnToSide++;
 	}
-	if (eKierunek == ToRight){
+	if (eDirection == ToRight){
 		suiTurnToSide--;
 	}
 	LedOn(suiTurnToSide%4);
