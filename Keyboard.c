@@ -7,7 +7,7 @@
 #define S3_bm 		 (1<<7)
 
 void KeyboardInit(){
-  IO0DIR = (IO0DIR & !(S0_bm | S1_bm | S2_bm | S3_bm));
+  IO0DIR = (IO0DIR & ~(S0_bm | S1_bm | S2_bm | S3_bm));
   }
 
 enum ButtonState eKeyboardRead(){
