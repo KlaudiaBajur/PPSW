@@ -39,6 +39,6 @@ int main(void){
 				}
 				break;
 		}
-		InitTimer0Match0(10000);
+		InitTimer0Match0(100000);
 		}
 }
