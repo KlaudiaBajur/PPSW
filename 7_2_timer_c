@@ -13,19 +13,20 @@ void InitTimer0(void){
 }
 void WaitOnTimer0(unsigned int uiTime){
 
-	T0TCR = T0TCR|Timer_Reset; // timer resetowany
-	T0TCR = T0TCR & (~Timer_Reset); // timer juz nie resetowany bo wrocil do zera
+	T0TCR = T0TCR|Timer_Reset; 
+	T0TCR = T0TCR & (~Timer_Reset); 
 	while (T0TC < (uiTime*15));
 }
 void InitTimer0Match0(unsigned int uiDelayTime){
 	T0MR0 = uiDelayTime*15;
-	T0MCR = T0MCR | (MR0_INTERRUPT|MR0_RESET); // co robi ta linijka?
+	T0MCR = T0MCR | (MR0_INTERRUPT|MR0_RESET);
 	T0TCR = T0TCR|Timer_Reset;
+	T0TCR = T0TCR & (~Timer_Reset);
 	T0TCR = Timer_Enable;
 	WaitOnTimer0Match0();
 }
 
 void WaitOnTimer0Match0(){
-	while ((T0IR & MR0_INTERRUPT_FLAG) == 0x0);
+	while ((T0IR & MR0_INTERRUPT_FLAG) == 0);
 	T0IR = MR0_INTERRUPT_FLAG;
 }
