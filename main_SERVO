@@ -1,0 +1,34 @@
+#include "Servo.h"
+#include "Keyboard.h"
+
+void Delay(unsigned int uiWaitMs){
+	
+	unsigned int uiCounter;
+	unsigned int uiCounter2;
+	
+	for(uiCounter=0; uiCounter<uiWaitMs; uiCounter++){
+	  for(uiCounter2=0; uiCounter2<1497; uiCounter2++){}
+	}	
+} 
+
+int main (){
+    KeyboardInit();
+		ServoInit(20);
+	  ServoGoTo(100);
+	while(1){
+	//	Delay(100);
+		if (eKeyboardRead() == BUTTON_0){
+			ServoCallib();
+		}
+		if (eKeyboardRead() == BUTTON_1){
+			ServoGoTo(50);
+		}
+		if (eKeyboardRead() == BUTTON_2){
+			ServoGoTo(100);
+		}
+		if (eKeyboardRead() == BUTTON_3){
+			ServoGoTo(150);
+		}
+	}
+}
+
