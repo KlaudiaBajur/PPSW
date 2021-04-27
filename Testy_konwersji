@@ -1,0 +1,65 @@
+void TestOf_UIntToHexStr(void) {
+	
+	printf("UIntToHexStr\n\n ");
+
+	printf("Test 1 - ");
+	//krance przedzialow, 0,9,10,15
+	char cAfterConverion[6];
+	UIntToHexStr(0x09AF, cAfterConverion);
+	if (strcmp(cAfterConverion, "0x09AF")==0) printf("OK\n\n "); else printf("Error\n\n ");
+	
+	printf("Test 2 - ");
+	//zera po x w stringu
+	UIntToHexStr(0x34, cAfterConverion);
+	if (strcmp(cAfterConverion, "0x0034")==0) printf("OK\n\n\n"); else printf("Error\n\n\n");
+}
+//----------------------------------------------------------
+void TestOf_eHexStringToUInt() {
+	
+	enum Result iReturnResult;
+	unsigned int uiReturnValue;
+		
+	printf("eHexStringToUInt\n\n ");
+	
+	printf("Test 1 - ");
+	//krance przedzialow
+	iReturnResult = eHexStringToUInt("0x09AF", &uiReturnValue);
+	if (iReturnResult==OK) printf("OK\n\n "); else printf("Error\n\n ");
+	
+	printf("Test 2 - ");
+	//za krotki
+	iReturnResult = eHexStringToUInt("0x", &uiReturnValue);
+	if (iReturnResult==ERROR) printf("OK\n\n "); else printf("Error\n\n ");
+	
+	printf("Test 3 - ");
+	//za dlugi
+	iReturnResult = eHexStringToUInt("0xFFDC2", &uiReturnValue);
+	if (iReturnResult==ERROR) printf("OK\n\n "); else printf("Error\n\n ");
+	
+	printf("Test 4 - ");
+	//poczatek rozny od 0x
+	iReturnResult = eHexStringToUInt("klhfcsd", &uiReturnValue);
+	if (iReturnResult==ERROR) printf("OK\n\n "); else printf("Error\n\n ");
+	
+	printf("Test 5 - ");
+	//mniej znakow
+	iReturnResult = eHexStringToUInt("0x034", &uiReturnValue);
+	if (iReturnResult==OK) printf("OK\n\n\n"); else printf("Error\n\n\n");
+}
+//----------------------------------------------------------
+void TestOf_AppendUIntToString() {	
+	
+	printf("AppendUIntToString\n\n ");
+	
+	printf("Test 1 - ");
+	//niepusty string, dopisywanie od NULLa
+	char cOryginal1[]="Jakis tekst";
+	AppendUIntToString(0x1234,cOryginal1);
+	if (strcmp(cOryginal1,"Jakis tekst0x1234")==0) printf("OK\n\n "); else printf("Error\n\n ");
+	
+	printf("Test 2 - ");
+	//pusty string
+	char cOryginal2[]="";
+	AppendUIntToString(0x1234,cOryginal2);
+	if (strcmp(cOryginal2,"0x1234")==0) printf("OK\n\n\n"); else printf("Error\n\n\n");
+}
