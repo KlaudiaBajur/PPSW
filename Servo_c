@@ -24,10 +24,10 @@ void DetectorInit(){
 enum DetectorState eReadDetector(void)
 {
 	if ((IO0PIN & DETECTOR_bm) == 0){
-		return INACTIVE;
+		return ACTIVE;
 	}
 	else{
-		return ACTIVE;
+		return INACTIVE;
 	}
 }
 
@@ -40,18 +40,16 @@ void Automat(){
 			}
 			else if (sServo.uiCurrentPosition > sServo.uiDesiredPosition){
 				LedStepLeft();
-				sServo.eState = IN_PROGRESS;
 				sServo.uiCurrentPosition--;
 			}
 			else if (sServo.uiCurrentPosition < sServo.uiDesiredPosition){
-				sServo.eState = IN_PROGRESS;
 				LedStepRight();
 				sServo.uiCurrentPosition++;
 			}
 			else sServo.eState = IN_PROGRESS;
 			break;
 		case IDLE:
-			if (sServo.uiDesiredPosition != sServo.uiCurrentPosition){
+			if (sServo.uiCurrentPosition != sServo.uiDesiredPosition){
 				sServo.eState = IN_PROGRESS;
 			}
 			else{
@@ -59,13 +57,13 @@ void Automat(){
 			}
 			break;
 		case CALLIB:
-			if (eReadDetector() == INACTIVE){
+			if (eReadDetector() == ACTIVE){
 				sServo.uiCurrentPosition = 0;
 				sServo.uiDesiredPosition = 0;
 				sServo.eState = IDLE;
 			}
 			else{
-				LedStepRight();
+				LedStepLeft();
 				sServo.eState = CALLIB;
 			}
 			break;
@@ -73,18 +71,18 @@ void Automat(){
 }
 
 void ServoGoTo(unsigned int uiPosition){
-	  sServo.eState = IN_PROGRESS;
 		sServo.uiDesiredPosition = uiPosition;
 }
 
 void ServoCallib(void){
-	  sServo.eState = CALLIB;
-	  while(eReadDetector()==INACTIVE);
+	  if(eReadDetector() == INACTIVE){
+			sServo.eState = CALLIB;
+		}
 }
 
 void ServoInit(unsigned int uiServoFrequency){
-	Timer0Interrupts_Init((1000000/uiServoFrequency), &Automat);
 	LedInit();
 	DetectorInit();
 	ServoCallib();
+	Timer0Interrupts_Init((1000000/uiServoFrequency), &Automat);
 }
