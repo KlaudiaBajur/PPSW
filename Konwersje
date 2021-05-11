@@ -12,7 +12,9 @@ void UIntToHexStr (unsigned int uiValue, char pcStr[]) {
 	pcStr[6]=NULL;
 	
 	for(ucNibbleCounter=0; ucNibbleCounter<4; ucNibbleCounter++) {
+		
 		ucCurrentNibble=(uiValue >> (ucNibbleCounter*4))&0x0F;
+		
 		if(ucCurrentNibble<10){
 			pcStr[5-ucNibbleCounter] = '0' + ucCurrentNibble;
 		}
@@ -33,27 +35,25 @@ enum Result eHexStringToUInt (char pcStr[], unsigned int *puiValue) {
 	if((pcStr[0]!='0') || (pcStr[1]!='x' || pcStr[2]==NULL)){
 		return ERROR;
 	}
-	for(ucCharacterCounter=2; ucCharacterCounter<7; ucCharacterCounter++) {
-		ucCurrentCharacter = pcStr[ucCharacterCounter];
-		if(ucCurrentCharacter==NULL){
-			return OK;
-		}
-		else if(ucCharacterCounter==6){
+	for(ucCharacterCounter=2; pcStr[ucCharacterCounter] != NULL; ucCharacterCounter++) {
+		
+		if(ucCharacterCounter==6){
 			return ERROR;
 		}
+		ucCurrentCharacter = pcStr[ucCharacterCounter];
 		*puiValue = *puiValue<<4;
+		
 		if(ucCurrentCharacter <= '9' & ucCurrentCharacter >= '0'){
-			ucCurrentCharacter = ucCurrentCharacter-'0';
+			*puiValue= *puiValue | (ucCurrentCharacter - '0');
 		}
-		else if(ucCurrentCharacter<='F' && ucCurrentCharacter<='A'){
-			ucCurrentCharacter = ucCurrentCharacter-'A'+10;	
+		else if(ucCurrentCharacter>='A' && ucCurrentCharacter<='F'){
+			*puiValue = *puiValue | (ucCurrentCharacter - 'A' + 10);
 		}
 		else {
 		return ERROR;
 		}
-		*puiValue = (*puiValue) | ucCurrentCharacter;
 	}
-return ERROR;
+  return OK;
 }
 
 void AppendUIntToString (unsigned int uiValue, char pcDestinationStr[]) {
@@ -65,18 +65,22 @@ void AppendUIntToString (unsigned int uiValue, char pcDestinationStr[]) {
 
 
 //UIntToHexStr Test 
-unsigned int uiValue = 15000;
-char pcStr[6];
+//unsigned int uiValue = 15000;
+//char pcStr[6];
 
 //eHexStringToUInt Test
-char pcStr[6] = "0x76C2";
+char pcStr[6] = "0x3E8";
+char pcStr2[3] ="0x";
+unsigned int *puiValue2;
 unsigned int *puiValue;
 
 char pcDestinationStr[255] = "123";
 
 int main(void) {
-
+	enum Result Result;
+	Result = eHexStringToUInt(pcStr, puiValue);
+	Result = eHexStringToUInt(pcStr2, puiValue2);
 	//UIntToHexStr(uiValue, pcStr);
-	//eHexStringToUInt(pcStr, puiValue);
-	//AppendUIntToString (uiValue, pcDestinationStr);
+//	eHexStringToUInt(pcStr, puiValue);
+//	AppendUIntToString (uiValue, pcDestinationStr);
 }
