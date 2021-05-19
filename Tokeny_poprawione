@@ -2,7 +2,7 @@
 #define MAX_TOKEN_NR 3 
 #define NULL 0 
 #define MAX_KEYWORD_NR 3 
-#define MAX_KEYWORD_STRING_LTH 10 // mksymalna dlugosc komendy (wykozystywana w struct Keyword)
+#define MAX_KEYWORD_STRING_LTH 10
 
 enum CompResult {DIFFERENT, EQUAL};
 enum Result{OK, ERROR};
@@ -63,14 +63,6 @@ void ReplaceCharactersInString(char pcString[],char cOldChar,char cNewChar){
 }
 
 enum KeywordCode {LD, ST, RST};
-    
-/* Zmienne przekazywane sa do funkcji przez wartosc, a tablice 
-przez wskaznik. Po wykonaniu funkcji wartosc zmiennej
-n nie zmieni sie, natomiast tablica zostanie wypelniona 
-Tablice przekazywane sa do funkcji w odmienny sposób, niz zmienne. Jesli przekazuje sie do funkcji argumenty nie bedace
-tablicami, to w momencie wywolania funkcji tworzone sa zmienne o nazwach parametrów funkcji, zmienne te inicjalizowane 
-sa wartosciami argumentów podanymi w instrukcji wywolania funkcji. Natomiast, jesli argumentem funkcji jest tablica, 
-to w momencie wywolania funkcji, nie jest tworzona kopia tej tablicy*/
 
 union TokenValue{ 
     enum KeywordCode eKeyword; 
@@ -85,9 +77,7 @@ struct Token{
     union TokenValue uValue; 
 };  
 
-//Poniewaz w pojedynczym komunikacie mamy najczesciej do czynienia wiecej niz z jednym tokenem wiec wynik
-//dekodowania bedzie przechowywany w tablicy tokenów
-struct Token asToken[MAX_TOKEN_NR];  // zm glob wypelniana przez DecodeMsg na podstawie cUartRxBuffer i asCommandList
+struct Token asToken[MAX_TOKEN_NR]; 
 
 
 struct Keyword{ 
@@ -96,69 +86,43 @@ struct Keyword{
 }; 
 
   
-//Deklaracja listy poprawnych slów kluczowych
-// zmienna globalna asKeywordList uzywana przez bStringToCommand
-// dla tokenu reset bedocego typem KEYWORD wartoscia(typu enum) jes RST
-struct Keyword asKeywordList[MAX_KEYWORD_NR]={ //tutaj tworze obiekt typu struct Keyword,(lista obiektow typu struct Keyword.) asKeywordList przechowuje w kolejnych wierszach elementy typu Keyword
-    {RST,"reset"}, //po prawej cString (z Keyword) a po lewej eCode (typu enum KeywordCode)
-    {LD, "load" }, //kod slowa kluczowego i zwiazany z nim lancuch znakowy
-    {ST, "store"} //deklaracja slow kluczowych
-}; 
+
+struct Keyword asKeywordList[MAX_KEYWORD_NR]={
+	{RST,"reset"},
+	{LD, "load" },
+	{ST, "store"}
+};
   
 
-unsigned char ucTokenNr; // zmienna globalna oznaczajaca liczbe tokenów w zdekodowanym komunikacie
+unsigned char ucTokenNr; 
 
-enum WorkType{TOKEN, DELIMITER};  
+enum State{TOKEN, DELIMITER};  
     
-/*
-f-kcja Wypelnia pola uValue tablicy asToken wskaznikami na poczatki tokenów znajdujacych sie w lancuchu znakowym String.
-Funkcja zwracac ilosc znalezionych tokenów.
-*/
+
 unsigned char ucFindTokensInString(char *pcString){ 
 
-    enum WorkType eTryb=DELIMITER; //wartosc poczatkowa ustawiamy jako delimiter zeby nie pisac dodatkowego warunku w petli
-
+    enum State eState=DELIMITER; 
     unsigned char ucTokenNr=0; 
-    unsigned char ucArrayIndex; //indeks dekodowanego elementu tablicy
-                                //zlicza znaki w wprowadzanym stringu iterator w petli
+    unsigned char ucCharacterCounter; 
+                                
     unsigned char ucCurrentCharacter; 
   
-     for(ucArrayIndex=0;;ucArrayIndex++){ 
-        ucCurrentCharacter=pcString[ucArrayIndex]; //wartosc aktualnego elementu tablicy
-        switch(eTryb){ 
- /*
- switch sprawdza wartosc wyrazenia (tu eTryb) w zaleznosci od wartosci prezechodzi do case z ta wartoscia i wykonuje sie do slowa break
- w 1 iteracji zawsze najpierw wykona sie case DELIMITER
- w którym jezeli wartosc elementu tablicy=null(koniec tokenu) zwracany jest numer danego tokenu(ilosc tokenów wtablicy)
- jesli dany element jest spacja wartosc eTryb nadal wynosi DELIMITER czyli w kolejnej iteracji wykona sie ten case
- 
- jesli ma inna wartosc niz ww dla eTryb przyporzadkowywana jest wartosc TOKEN 
- 
- natomiast watosc licznika ucTokenNumber jest inkrementowana(iloscznalezionych tokenów) a switch zakonczy dzialanie
- 
- 
- jezeli w DELIMITER natrafiono na wartosc rózna niz /s i null w koolejnej iteracji petli for wykona sie case TOKEN
- W którym jezeli natrafimy na element którego wartosc jest równa maksymalnemu dopuszalnemu elementowi tokenu 
- funkcja zwróci jego numer
- jezeli wartosc elementu tablicy=0(koniec tokenu) zwracany jest numer danego elementu
- jesli dany element jest rózny od spacji wartosc eTryb nadal wynosi TOKEN w przeciwnym wypadku zmieniana jest
- na DELIMITER a case konczy dzialanie
- w skrócie fkcja wykonuje sie do osiagniecia maksymalnej dlugosci tokenu lub osiagniecia nulla zwracajac wtedy jego dlugosc
- 
- */
+     for(ucCharacterCounter=0;;ucCharacterCounter++){ 
+        ucCurrentCharacter=pcString[ucCharacterCounter]; 
+        switch(eState){ 
             case TOKEN: 
             { 
-                if(ucTokenNr==MAX_TOKEN_NR){ //sprawdza czy token nie ma za duzo liter max 3
+                if(ucTokenNr==MAX_TOKEN_NR){ 
                     return ucTokenNr; 
                 } 
-                else if(ucCurrentCharacter==NULL){ //sprawdza czy dosliszby do konca wejsciowego stringa do funkji
+                else if(ucCurrentCharacter==NULL){ 
                     return ucTokenNr; 
                 } 
-                else if(ucCurrentCharacter!=' '){ //sprawdza czy mamy delimiter jak nie to dalej ustawia stan na token
-                   eTryb=TOKEN; 
+                else if(ucCurrentCharacter!=' '){
+                   eState=TOKEN; 
                 } 
                 else{ 
-                    eTryb=DELIMITER; 
+                    eState=DELIMITER; 
                 } 
                 break; 
             } 
@@ -169,71 +133,40 @@ unsigned char ucFindTokensInString(char *pcString){
                 } 
 
                 else if(ucCurrentCharacter==' '){ 
-                  eTryb=DELIMITER; 
+                  eState=DELIMITER; 
                 } 
 
                 else{ 
-                    eTryb=TOKEN; 
-                    asToken[ucTokenNr].uValue.pcString=pcString+ucArrayIndex; //.odniesienie do pola uValue, tutaj wejdzie przy pierwszym obiegu petli, pcstring wskazuje na pierwszy znak w tablicy, pamiec ciagla, dodanie uccounter wskaze na autkalny znak czyli poczatek tokena w tym przypadku
-                                            // w miejsce o indeksie ucTokenNr (w tablicy asToken) jako wartosc (uValue) o rodzaju string (pcstring) wpisz wskaznik  w miejsce w ktorym zaczna sie token
+                    eState=TOKEN; 
+                    asToken[ucTokenNr].uValue.pcString=pcString+ucCharacterCounter;
                     ucTokenNr++; 
                 } 
-
                 break; 
             } 
         } 
     } 
 } 
- 
-/* 
-Zadaniem funkcji jest zamienic lancuch znakowy na kod slowa kluczowego na podstawie listy slów kluczowych.
-W przypadku powodzenia funkcja powinna zwracac wartosci OK.
-W przypadku niepowodzenia funkcja powinna zwracac wartosci ERROR.
-
-enum zwracajacy KODY keywordów odnalezione w stringu na podstawie listy slów kloczowych
-dla wszystkich wartosci mniejszych niz 3(max dl keywordu) jezeli token otrymany w ucFindTokensInString
-jest z zgodny z któryms z zdeklarowanych keywordów 
-
-oraz zwracana jest wartosc OK 
-gdy przekroczona zostanie wartosc ucArrayIndex< MAX_KEYWORD_NR lub odnalezione zostanie slowo niezgodne z 
-lista slów kluczowych for zakonczy dzialanie i zwrócony zostanie ERROR
-*/
 
 enum Result eStringToKeyword (char pcStr[],enum KeywordCode *peKeywordCode){ 
-  //pe - pointer enum, sama funkcja ma zwraca result(OK/ERROR) ale jakos musimy wplywac na dzialanie programu 
-  //wiec rezultat zamiany ze stringa na keyword zwracamy przez argument(wskaznik na enum keywordcode)
-    unsigned char ucArrayIndex;   
-//sama petla dziala tak, ze przechodzi po elementach asKeywordList i porownuje pole cString 
-//jesli eCopeString zwroci EQUAL to warnek spelniony (wchodzimy do if) a warunek spelniony wtedy gdy: pcString (to co podajemy do funkcji) 
+    unsigned char ucKeywordCounter;   
+    for(ucKeywordCounter=0; ucKeywordCounter< MAX_KEYWORD_NR; ucKeywordCounter++){ 
 
-    for(ucArrayIndex=0; ucArrayIndex< MAX_KEYWORD_NR; ucArrayIndex++){ 
-
-        if(EQUAL == eCompareString(asKeywordList[ucArrayIndex].cString, pcStr)){ 
-            *peKeywordCode= asKeywordList[ucArrayIndex].eCode; 
-            // jest rowne polu cString ze struktury Keyword - przypisanie wartosci do miejsca na ktore wskazuje wskaznik
+        if(EQUAL == eCompareString(asKeywordList[ucKeywordCounter].cString, pcStr)){ 
+            *peKeywordCode= asKeywordList[ucKeywordCounter].eCode; 
             return OK; 
        } 
     } 
     return ERROR; 
 } 
-
-/*
-Zadaniem funkcji jest zdekodowac wszystkie tokeny tj. dla kazdego tokenu ustalic jego typ i wartosc i wpisac je do
-tablicy asToken.
-Nalezy skorzystac ze wskazników poczatków tokenów znajdujacych sie w
-asToken[0..ucTokenNr].uValue.pcString (patrz funkcja ucFindTokensInString).
-*/
-
-
 void DecodeTokens(void){ 
 
-    unsigned char ucArrayIndex; 
+    unsigned char ucTokenCounter; 
     struct Token *psCurrentToken; 
     unsigned int uiTokenValue; 
-    enum KeywordCode eTokenCode; //przypisanie kodu tokena
+    enum KeywordCode eTokenCode;
 
-    for(ucArrayIndex = 0; ucArrayIndex < ucTokenNr; ucArrayIndex++){ 
-        psCurrentToken = &asToken[ucArrayIndex]; //pscurrenttoken wskaznik na elemtn tablicy o indeksie ucTokenCounter
+    for(ucTokenCounter = 0; ucTokenCounter < ucTokenNr; ucTokenCounter++){ 
+        psCurrentToken = &asToken[ucTokenCounter];
         if(OK == eHexStringToUInt(psCurrentToken->uValue.pcString, &uiTokenValue)){ 
             psCurrentToken->eType = NUMBER; 
             psCurrentToken->uValue.uiNumber= uiTokenValue; 
@@ -247,7 +180,9 @@ void DecodeTokens(void){
         } 
     } 
 } 
-
+//Co porownujemy w pojedynczej iteracji ?
+/*W pojedynczej iteracji porównujemy  pcStr  i 
+aktualny cString ze struktury Keyword, bedacy elementem tablicy asKeywordList wskazywany przez ucKeywordCounter */
 
 void DecodeMsg(char *pcString){ 
     ucTokenNr= ucFindTokensInString(pcString); 
@@ -255,7 +190,7 @@ void DecodeMsg(char *pcString){
     DecodeTokens(); 
 } 
 
+char cTab[] = "Klaudia reset 0x22";
 int main(){
-	
+	DecodeMsg(cTab);
 }
-
