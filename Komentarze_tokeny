@@ -1,0 +1,315 @@
+#include <LPC21xx.H>
+#define MAX_TOKEN_NR 3 
+#define NULL 0 
+#define MAX_KEYWORD_NR 3 
+#define MAX_KEYWORD_STRING_LTH 10 // mksymalna dlugosc komendy (wykożystywana w struct Keyword)
+
+enum KeywordCode {LD, ST, RST}; //Token zostanie rozpoznany jako KEYWORD jeżeli będzie należał do listy słów
+                                // kluczowych. W takim przypadkuwartość tokenu stanowić będzie enum.
+    
+/* Zmienne przekazywane są do funkcji przez wartość, a tablice 
+przez wskaźnik. Po wykonaniu funkcji wartość zmiennej
+n nie zmieni się, natomiast tablica zostanie wypełniona 
+Tablice przekazywane są do funkcji w odmienny sposób, niż zmienne. Jeśli przekazuje się do funkcji argumenty nie będące
+tablicami, to w momencie wywołania funkcji tworzone są zmienne o nazwach parametrów funkcji, zmienne te inicjalizowane 
+są wartościami argumentów podanymi w instrukcji wywołania funkcji. Natomiast, jeśli argumentem funkcji jest tablica, 
+to w momencie wywołania funkcji, nie jest tworzona kopia tej tablicy*/
+
+/*unia to takie pudełko do przechowywania dowolnego przedmiotu cokolwiek by to ni było
+dzięki niej możemy w tymsamym miejscu trzymać obiekty różnego typu
+Dzięki unii możemy sprawić że w tym samym miejscu w pamięci będą trzymane obiekty różnef=go typu  ale tylko jeden
+z nich w danym momencie
+Ponieważ typ tokenu może być różny (typ wyliczeniowy, liczba, łańcuch znakowy) dlatego jego wartość nie może być
+przechowywana w zmiennej jednego typu.
+*/
+union TokenValue{ 
+    enum KeywordCode eKeyword; 
+    unsigned int uiNumber; 
+    char* pcString; 
+}; 
+  //  TokenType i Token    przechowują  odpowiednio typ i wartość tokenu struktura ta jest tablicą tokenów
+ //Typ tokenu przechowywany w zmiennej wyliczeniowej enum
+enum TokenType {KEYWORD, NUMBER, STRING}; //Będziemy rozróżniać trzy typy tokenów: KEYWORD, NUMBER, i STRING.
+ 
+ /*struct -struktura-klasa w której przez domniemanie wszystkie składniki są publiczne */
+  
+struct Token{ 
+    enum  TokenType  eType; 
+    union TokenValue uValue; 
+};  
+
+//Ponieważ w pojedynczym komunikacie mamy najczęściej do czynienia więcej niż z jednym tokenem wiec wynik
+//dekodowania będzie przechowywany tablicy tokenów
+struct Token asToken[MAX_TOKEN_NR];  // zm glob wypelniana przez DecodeMsg na podstawie cUartRxBuffer i asCommandList
+
+
+
+ /*lista słów kluczowych
+  do sprawdzenia czy token jest typu KEYWORD musi istnieć lista łańcuchów znakowych rozpoznawanych jako słowo kluczowe.
+elementem listy jest struktura składająca się z dwóch elementów – kodu słowa kluczowego oraz związanego z nim łańcucha znakowego.
+ */   
+struct Keyword{ 
+    enum KeywordCode eCode; 
+    char cString[MAX_KEYWORD_STRING_LTH + 1]; 
+}; 
+
+  
+//Deklaracja listy poprawnych słów kluczowych
+// zmienna globalna asKeywordList uzywana przez bStringToCommand
+// dla tokenu reset bedocego typem KEYWORD wartością(typu enum) jes RST
+struct Keyword asKeywordList[MAX_KEYWORD_NR]={ //tutaj tworze obiekt typu struct Keyword,(lista obiektow typu struct Keyword.) asKeywordList przechowuje w kolejnych wierszach elementy typu Keyword
+    {RST,"reset"}, //po prawej cString (z Keyword) a po lewej eCode (typu enum KeywordCode)
+    {LD, "load" }, //kod slowa kluczowego i zwiazany z nim lancuch znakowy
+    {ST, "store"} //deklaracja slow kluczowych
+}; 
+  
+
+unsigned char ucTokenNr; // zmienna globalna oznaczająca liczbe tokenów w zdekodowanym komunikacie
+
+enum WorkType{TOKEN, DELIMITER};  
+//tokrn i delimiter- stany automatu ucFindTokensInString
+    
+/*
+f-kcja Wypełnia pola uValue tablicy asToken wskaźnikami na początki tokenów znajdujących się w łańcuchu znakowym String.
+Funkcja zwracać ilość znalezionych tokenów.
+Uwaga: Funkcja indeksuje nie więcej tokenów niż rozmiar tablicy asToken. 
+Implementacja funkcji ma postać automatu którego wejściami są kolejne znaki analizowanego łańcucha
+pole warunku petki for jest puste; funkcja składa się tylko z definicji i inicjalizacji zmiennych
+w caseach ustawiany jest stan automatu
+switch sterowany jest stanem automatu
+*/
+
+// funkcja odnajduje tokeny w stringu zwraca ich początki oraz ilość znalezionych tokenów
+//przejsc po stringu i znalezc te znaki po deliitrach + pierwszy znak.(czyli poczatki tokenow)
+unsigned char ucFindTokensInString(char *pcString){ 
+
+    enum WorkType eTryb=DELIMITER; //wartość początkową ustawiamy jako delimiter zeby nie pisac dodatkowego warunku w petli
+
+    unsigned char ucTokenNr=0; //liczba tokenów w zdekodowanym komunikacie
+                               //to co bedziemy zwracac - ilosc tokenow
+    unsigned char ucArrayIndex; //indeks dekodowanego elementu tablicy
+                                //zlicza znaki w wprowadzanym stringu iterator w petli
+    unsigned char ucCurrentCharacter; //wartość aktualnego elementu tablicy
+                                      // aktualnie rozwazany znak np r z "reset" itp
+  
+     for(ucArrayIndex=0;;ucArrayIndex++){ // pętla nieskończona  idąca po indeksach tablicy zaczynając od 0
+                                          // "nieskonczona petla", chyba, ze w skodku trafi na break
+        ucCurrentCharacter=pcString[ucArrayIndex]; //wartość aktualnego elementu tablicy
+        switch(eTryb){ 
+ /*
+ switch sprawdza wartość wyrażenia (tu eTryb) w zależności od wartości prezechodzi do case z tą wartością i wykonuje się do słowa break
+ w 1 iteracji zawsze najpierw wykona się case DELIMITER
+ w którym jeżeli wartość elementu tablicy=null(koniec tokenu) zwracany jest numer danego tokenu(ilość tokenów wtablicy)
+ jeśli dany element jest spacją wartośc eTryb nadal wynosi DELIMITER czyli w kolejnej iteracji wykona się ten case
+ 
+ jeśli ma inną wartość niż ww dla eTryb przyporządkowywana jest wartość TOKEN 
+ 
+ natomiast watość licznika ucTokenNumber jest inkrementowana(ilośćznalezionych tokenów) a switch zakończy działanie
+ 
+ 
+ jeżeli w DELIMITER natrafiono na wartość różną niż /s i null w koolejnej iteracji pętli for wykona się case TOKEN
+ W którym jeżeli natrafimy na element którego wartość jest równa maksymalnemu dopuszalnemu elementowi tokenu 
+ funkcja zwróci jego numer
+ jeżeli wartość elementu tablicy=0(koniec tokenu) zwracany jest numer danego elementu
+ jeśli dany element jest różny od spacji wartośc eTryb nadal wynosi TOKEN w przeciwnym wypadku zmieniana jest
+ na DELIMITER a case kończy działanie
+ w skrócie fkcja wykonuje się do osiągnięcia maksymalnej długości tokenu lub osiągnięcia nulla zwracając wtedy jego długość
+ 
+ */
+            case TOKEN: 
+            { 
+                if(ucTokenNr==MAX_TOKEN_NR){ //sprawdza czy token nie ma za duzo liter max 3
+                    return ucTokenNr; 
+                } 
+                else if(ucCurrentCharacter==NULL){ //sprawdza czy dosliszby do konca wejsciowego stringa do funkji
+                    return ucTokenNr; 
+                } 
+                else if(ucCurrentCharacter!=' '){ //sprawdza czy mamy delimiter jak nie to dalej ustawia stan na token
+                   eTryb=TOKEN; 
+                } 
+                else{ 
+                    eTryb=DELIMITER; 
+                } 
+                break; 
+            } 
+            case DELIMITER: 
+            { 
+                if(ucCurrentCharacter==NULL){ 
+                    return ucTokenNr; 
+                } 
+
+                else if(ucCurrentCharacter==' '){ 
+                  eTryb=DELIMITER; 
+                } 
+
+                else{ 
+                    eTryb=TOKEN; 
+                    asToken[ucTokenNr].uValue.pcString=pcString+ucArrayIndex; //.odniesienie do pola uValue, tutaj wejdzie przy pierwszym obiegu petli, pcstring wskazuje na pierwszy znak w tablicy, pamiec ciagla, dodanie uccounter wskaze na autkalny znak czyli poczatek tokena w tym przypadku
+                                            // w miejsce o indeksie ucTokenNr (w tablicy asToken) jako wartosc (uValue) o rodzaju string (pcstring) wpisz wskaznik  w miejsce w ktorym zaczna sie token
+                    ucTokenNr++; //zwiekwsza ilosc tokenow
+                } 
+
+                break; 
+            } 
+        } 
+    } 
+} 
+ 
+/* 
+Zadaniem funkcji jest zamienić łańcuch znakowy na kod słowa kluczowego na podstawie listy słów kluczowych.
+W przypadku powodzenia funkcja powinna zwracać wartości OK.
+W przypadku niepowodzenia funkcja powinna zwracać wartości ERROR.
+
+enum zwracający KODY keywordów odnalezione w stringu na podstawie listy słów kloczowych
+dla wszystkich wartości mniejszych niż 3(max dł keywordu) jeżeli token otrymany w ucFindTokensInString
+jest z zgodny z którymś z zdeklarowanych keywordów 
+
+oraz zwracana jest wartość OK 
+gdy przekroczona zostanie wartość ucArrayIndex< MAX_KEYWORD_NR lub odnalezione zostanie słowo niezgodne z 
+listą słów kluczowych for zakończy działanie i zwrócony zostanie ERROR
+*/
+enum Result eStringToKeyword (char pcStr[],enum KeywordCode *peKeywordCode){ 
+  //pe - pointer enum, sama funkcja ma zwraca result(OK/ERROR) ale jakos musimy wplywac na dzialanie programu 
+  //wiec rezultat zamiany ze stringa na keyword zwracamy przez argument(wskaznik na enum keywordcode)
+    unsigned char ucArrayIndex;   
+//sama petla dziala tak, ze przechodzi po elementach asKeywordList i porownuje pole cString 
+//jesli eCopeString zwroci EQUAL to warnek spelniony (wchodzimy do if) a warunek spelniony wtedy gdy: pcString (to co podajemy do funkcji) 
+
+    for(ucArrayIndex=0; ucArrayIndex< MAX_KEYWORD_NR; ucArrayIndex++){ 
+
+        if(EQUAL == eCompareString(asKeywordList[ucArrayIndex].cString, pcStr)){ 
+            *peKeywordCode= asKeywordList[ucArrayIndex].eCode; 
+            // jest rowne polu cString ze struktury Keyword - przypisanie wartosci do miejsca na ktore wskazuje wskaznik
+            return OK; //return przerywa dzialanie funkcji (petla juz sie nie wykonuje)
+       } 
+    } 
+    return ERROR; 
+} 
+
+/*
+Zadaniem funkcji jest zdekodować wszystkie tokeny tj. dla każdego tokenu ustalić jego typ i wartość i wpisać je do
+tablicy asToken.
+Należy skorzystać ze wskaźników początków tokenów znajdujacych się w
+asToken[0..ucTokenNr].uValue.pcString (patrz funkcja ucFindTokensInString).
+*/
+void DecodeTokens(void){ 
+
+    unsigned char ucArrayIndex; //iterator w petli(nr aktualnego tokena)
+    struct Token *psCurrentToken; //wskaznik na aktualnie rozwazany token
+    unsigned int uiTokenValue; //z klasy token tu bedziemy wpisywac pole value
+    enum KeywordCode eKodTokena; //przypisanie kodu tokena
+
+    for(ucArrayIndex = 0; ucArrayIndex < ucTokenNr; ucArrayIndex++){ 
+        psCurrentToken = &asToken[ucArrayIndex]; //pscurrenttoken wskaznik na elemtn tablicy o indeksie ucTokenCounter
+        if(OK == eHexStringToUInt(psCurrentToken->uValue.pcString, &uiTokenValue)){ 
+            psCurrentToken->eType = NUMBER; 
+            psCurrentToken->uValue.uiNumber= uiTokenValue; 
+        } 
+        else if(OK== eStringToKeyword(psCurrentToken->uValue.pcString, &eKodTokena)){ 
+            psCurrentToken->eType=KEYWORD; 
+            psCurrentToken->uValue.eKeyword=eKodTokena; 
+        } 
+        else{ 
+            psCurrentToken->eType=STRING; 
+        } 
+    } 
+} 
+
+/*
+Na podstawie String-a i asCommandList wypełnia tablice sToken i ustawia zmienna ucTokenNr.
+W tym celu:
+- indeksuje początki tokenów
+- zamienia wszystkie delmitery na nulle
+- dekoduje poszczególne tokeny.
+*/
+void DecodeMsg(char *pcString){ 
+    ucTokenNr= ucFindTokensInString(pcString); 
+    ReplaceCharactersInString(pcString, ' ', NULL); 
+    DecodeTokens(); 
+} 
+
+int main(){
+	
+}
+
+
+
+//Komunikat ma postać łańcucha znakowego zakończonego znakiem NULL i składa się z jednego lub więcej tokenów.
+//Tokeny to sekwencje znaków oddzielone jednym lub wieloma delimiterami. Funkcję delimitera pełni
+//znak spacji „\s” (20h, 32) Przykład komunikatu „Ola ma jeża”.
+//Składa się on z trzech tokenów rozdzielonych dwoma delimiterami.
+
+//Dekodowanie komunikatu polega na policzeniu i zdekodowaniu poszczególnych tokenów.
+//Dekodowanie komunikatu będzie polegało na wypełnieniu tablicy sToken na podstawie odebranego łańcucha znakowego.
+//Zdekodowanie tokenu- określenie jego typu i wartości a następnie zapamiętanie ich w odpowiedniej strukturze danych.
+//Będziemy rozróżniać trzy typy tokenów: KEYWORD, NUMBER, i STRING.
+
+//Token zostanie rozpoznany jako KEYWORD jeżeli będzie należał do listy słów kluczowych. 
+//W takim przypadku wartość tokenu stanowić będzie enum.
+
+//Przykład: Załóżmy, że zadeklarowano następującą listę słów kluczowych:
+//Keyword (enum) i odpowiadający jej łańcuch znakowy (char[])
+//LD               “load”    
+//ST               “store”    
+//RST              “reset”
+
+//tokeny “store” i „reset” zostaną zdekodowane w następująco 
+
+//token      typ        wartość (enum)
+//„reset”    KEYWORD    RST 
+//“store”    KEYWORD    ST
+
+//Token zostanie rozpoznany jako NUMBER jeżeli będzie spełniał format liczby zapisanej w kodzie heksadecymalnym
+// Wtakim przypadku wartość tokenu stanowić będzie wartość liczby. Przykład: token /typ/ wartość (unsigned int )
+//„0x10” /NUMBER/ 16 (decymalnie)       „0x0A”/ NUMBER /10 (decymalnie)
+
+//Token zostanie rozpoznany jako STRING jeżeli nie zostanie rozpoznany jako KEYWORD ani jako NUMBER.
+//Wartość tokenu typu STRING stanowić będzie wskaźnik na ten token. Przykład: token /typ/ wartość (char *)
+//„add” /STRING/ Wskażnik na „add”          “subtract” /STRING /Wskażnik na “subtract”
+    
+//Ponieważ typ tokenu może być różny (typ wyliczeniowy, liczba, łańcuch znakowy) dlatego jego wartość nie może być
+//przechowywana w zmiennej jednego typu. Z tego względu do przechowywania wartości tokenu zostanie wykorzystana
+//unia zmiennych zdefiniowana następująco:
+/*
+typedef enum KeywordCode { LD, ST, RST};
+typedef union TokenValue
+{
+enum KeywordCode eKeyword; // jezeli KEYWORD
+unsigned int uiNumber; // jezeli NUMBER
+char * pcString; // jezeli STRING
+};
+
+Tablica tokenów
+Typ i wartość tokenu będą przechowywane w jednej strukturze zdefiniowanej jak poniżej:
+
+typedef enum TokenType { KEYWORD, NUMBER, STRING};
+typedef struct Token
+{
+enum TokenType eType; // KEYWORD, NUMBER, STRING
+union TokenValue uValue; // enum, unsigned int, char*
+}
+
+Ponieważ w pojedynczym komunikacie mamy najczęściej do czynienia więcej niż z jednym tokenem wiec wynik
+dekodowania będzie przechowywany tablicy tokenów zdefiniowanej jak poniżej:
+
+#define MAX_TOKEN_NR 3 //maksymalna dopuszczalna ilość tokenów
+struct Token asToken[MAX_TOKEN_NR]
+
+Oprócz wypełnienia tablicy tokenów wynikiem dekodowania będzie również liczba odebranych tokenów
+zapamiętana w zmiennej: unsigned char ucTokenNr;
+
+Dekodowanie komunikatu polega na wypełnieniu tablicy sToken na podstawie odebranego łańcucha znakowego.
+Przykład: Wynik rozkodowania komunikatu: „load 0x20 immediately” .
+
+token           Type       Value
+“load”          KEYWORD    LD
+„0x20”          NUMBER     32 (decymalnie)
+„immediately”   STRING     wskaznik na „immediately”
+
+
+
+
+
+
+
+
