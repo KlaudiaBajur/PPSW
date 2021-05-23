@@ -1,0 +1,138 @@
+#include <string.h>
+#include <stdio.h>
+
+#define NULL 0
+
+void UIntToHexStr (unsigned int uiValue, char pcStr[]) {
+	unsigned char ucNibbleCounter;
+	unsigned char ucCurrentNibble;
+
+	pcStr[0]='0';
+	pcStr[1]='x';
+	pcStr[6]=NULL;
+
+	for(ucNibbleCounter=0; ucNibbleCounter<4; ucNibbleCounter++) {
+
+		ucCurrentNibble=(uiValue >> (ucNibbleCounter*4))&0x0F;
+
+		if(ucCurrentNibble<10){
+			pcStr[5-ucNibbleCounter] = '0' + ucCurrentNibble;
+		}
+		else
+			pcStr[5-ucNibbleCounter] = 'A' + (ucCurrentNibble-10);
+	}
+}
+
+enum Result {OK, ERROR};
+
+enum Result eHexStringToUInt (char pcStr[], unsigned int *puiValue) {
+
+	unsigned char ucCharacterCounter;
+	unsigned char ucCurrentCharacter;
+
+	*puiValue=0;
+
+	if((pcStr[0]!='0') || (pcStr[1]!='x' || pcStr[2]==NULL)){
+		return ERROR;
+	}
+	for(ucCharacterCounter=2; pcStr[ucCharacterCounter] != NULL; ucCharacterCounter++) {
+
+		if(ucCharacterCounter==6){
+			return ERROR;
+		}
+		ucCurrentCharacter = pcStr[ucCharacterCounter];
+		*puiValue = *puiValue<<4;
+
+		if(ucCurrentCharacter <= '9' & ucCurrentCharacter >= '0'){
+			*puiValue= *puiValue | (ucCurrentCharacter - '0');
+		}
+		else if(ucCurrentCharacter>='A' && ucCurrentCharacter<='F'){
+			*puiValue = *puiValue | (ucCurrentCharacter - 'A' + 10);
+		}
+		else {
+		return ERROR;
+		}
+	}
+  return OK;
+}
+
+void AppendUIntToString (unsigned int uiValue, char pcDestinationStr[]) {
+	unsigned char ucCharacterCounter;
+
+	for(ucCharacterCounter=0; pcDestinationStr[ucCharacterCounter]!=NULL; ucCharacterCounter++){}
+	UIntToHexStr(uiValue, &pcDestinationStr[ucCharacterCounter]);
+}
+
+
+
+void TestOf_UIntToHexStr(void) {
+
+	printf("UIntToHexStr\n\n ");
+
+	printf("Test 1 - ");
+	//Test sprawdza czy funkcja poprawnie skonwertuje liczby z krancow przedziałow 0-9, A-F
+	char cAfterConverion[6];
+	UIntToHexStr(0x09AF, cAfterConverion);
+	if (strcmp(cAfterConverion, "0x09AF")==0) printf("OK\n\n "); else printf("Error\n\n ");
+
+	printf("Test 2 - ");
+	//Test sprawdza czy zostanie zachowany odpowiedni format konwersji, zera po 0x
+	UIntToHexStr(0x22, cAfterConverion);
+	if (strcmp(cAfterConverion, "0x0022")==0) printf("OK\n\n\n"); else printf("Error\n\n\n");
+}
+
+//----------------------------------------------------------
+void TestOf_eHexStringToUInt() {
+
+	enum Result iReturnResult;
+	unsigned int uiReturnValue;
+
+	printf("eHexStringToUInt\n\n ");
+
+	printf("Test 1 - ");
+	//Test sprawdza czy funkcja poprawnie skonweruje liczby z krancow przedzialow
+	iReturnResult = eHexStringToUInt("0x09AF", &uiReturnValue);
+	if (iReturnResult==OK) printf("OK\n\n "); else printf("Error\n\n ");
+
+	printf("Test 2 - ");
+	//Test sprawdza odpornosc funkcja na blad w formacie polegajacy na znaku NULL bezposrednio po 0x
+	iReturnResult = eHexStringToUInt("0x", &uiReturnValue);
+	if (iReturnResult==ERROR) printf("OK\n\n "); else printf("Error\n\n ");
+
+	printf("Test 3 - ");
+	//Test sprawdza odpornosc funkcji na blad w formacie polegajact na zbyt dlugim lancuchu znakowym
+	iReturnResult = eHexStringToUInt("0xFFDC2", &uiReturnValue);
+	if (iReturnResult==ERROR) printf("OK\n\n "); else printf("Error\n\n ");
+
+	printf("Test 4 - ");
+	//Test sprawdza odpornosc funkcji na  niezgodnosc z formatem 0x...
+	iReturnResult = eHexStringToUInt("klhfcsd", &uiReturnValue);
+	if (iReturnResult==ERROR) printf("OK\n\n "); else printf("Error\n\n ");
+
+	printf("Test 5 - ");
+	//Test sprawdza poprawnosc konwersji przy podaniu mniejszej liczby znakow niz 4 po 0x
+	iReturnResult = eHexStringToUInt("0x034", &uiReturnValue);
+	if (iReturnResult==OK) printf("OK\n\n\n"); else printf("Error\n\n\n");
+}
+//----------------------------------------------------------
+void TestOf_AppendUIntToString() {
+
+	printf("AppendUIntToString\n\n ");
+
+	printf("Test 1 - ");
+	//Test sprawdza poprawnosc dodania przez funkcje niepustego łancucha znakow poprzez dopisywanie od NULLa
+	char cOryginalCharTest1[]="Klaudia";
+	AppendUIntToString(0x1234,cOryginalCharTest1);
+	if (strcmp(cOryginalCharTest1,"Klaudia0x1234")==0) printf("OK\n\n "); else printf("Error\n\n ");
+
+	printf("Test 2 - ");
+	//Test sprawdza odpornosc funkcji na dodanie liczby do pustego łańcucha znaków
+	char cOryginalCharTest2[]="";
+	AppendUIntToString(0x1234,cOryginalCharTest2);
+	if (strcmp(cOryginalCharTest2,"0x1234")==0) printf("OK\n\n\n"); else printf("Error\n\n\n");
+}
+int main(){
+    TestOf_AppendUIntToString();
+    TestOf_eHexStringToUInt();
+    TestOf_UIntToHexStr();
+}
