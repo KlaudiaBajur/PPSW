@@ -1,0 +1,144 @@
+#define NULL 0
+#include<string.h>
+
+
+void CopyString(char pcSource[], char pcDestination[]){
+
+    unsigned char ucCounter;
+    for(ucCounter = 0; pcSource[ucCounter] > 0; ucCounter++){
+		pcDestination[ucCounter] = pcSource[ucCounter];
+	}
+	pcDestination[ucCounter] = pcSource[ucCounter];
+}
+
+enum CompResult {DIFFERENT, EQUAL};
+
+enum CompResult eCompareString(char pcStr1[], char pcStr2[]){
+
+	unsigned char ucCounter;
+	for(ucCounter = 0; pcStr1[ucCounter] > 0; ucCounter++){
+        if(pcStr1[ucCounter] != pcStr2[ucCounter]) {
+            return DIFFERENT;
+        }
+	}
+	if(pcStr1[ucCounter] != pcStr2[ucCounter]) {
+        return DIFFERENT;
+	}
+  return EQUAL;
+}
+
+void AppendString (char pcSourceStr[],char pcDestinationStr[]){
+
+	unsigned char ucCounter;
+	for(ucCounter = 0; pcDestinationStr[ucCounter] > 0; ++ucCounter){};
+    CopyString(pcSourceStr, pcDestinationStr + ucCounter);
+}
+
+void ReplaceCharactersInString(char pcString[],char cOldChar,char cNewChar){
+
+	unsigned char ucCounter;
+	for(ucCounter = 0; pcString[ucCounter] > 0; ++ucCounter){
+		if(pcString[ucCounter] == cOldChar){
+			pcString[ucCounter] = cNewChar;
+		}
+	}
+}
+void TestOf_CopyString(void) {
+
+	printf("CopyString\n\n ");
+
+	printf("Test 1 - ");
+	//Test sprawdza czy string zostanie skopiowany ze znakiem NULL
+	char cAfterCopyTest1[]="Aleksander";
+	CopyString("Klaudia", cAfterCopyTest1);
+	if (strcmp("Klaudia", cAfterCopyTest1)==0) printf("OK\n\n "); else printf("Error\n\n ");
+
+    printf("Test 2 - ");
+	//Test sprawdza czy funkcja jest odporna na kopiowanie pustego łańcucha
+	char cAfterCopyTest2[]="Klaudia";
+	CopyString("", cAfterCopyTest2);
+	if (strcmp("", cAfterCopyTest2)==0) printf("OK\n\n "); else printf("Error\n\n ");
+
+	printf("Test  3- ");
+	//Test sprawdza czy dluzszy string zostanie bezblednie skopiowany do tablicy cAfterCopyTest3 w której znajduje się krótszy string
+	char cAfterCopyTest3[]="Bajur";
+	CopyString("Klaudia", cAfterCopyTest3);
+	if (strcmp("Klaudia", cAfterCopyTest3)==0) printf("OK\n\n "); else printf("Error\n\n ");
+
+}
+//----------------------------------------------------------
+void TestOf_eCompareString(void) {
+
+	printf("eCompareString\n\n ");
+
+	printf("Test 1 - ");
+	//Test sprawdza czy funkcja poprawnie porowna takie same łanuchy znaków
+	if (eCompareString("Klaudia", "Klaudia")==EQUAL) printf("OK\n\n "); else printf("Error\n\n ");
+
+	printf("Test 2 - ");
+	//Test sprawdza czy funkcja poprawnie porowna rozne łancuchy znakow, lecz o tej samej długości
+	if (eCompareString("Klaudia", "Barbara")==DIFFERENT) printf("OK\n\n "); else printf("Error\n\n ");
+
+	printf("Test 3 - ");
+	//Test sprawdza czy funkcja poprawnie porowna łańcuchy o różnej długosci
+	if (eCompareString("Klaudia", "Kla")==DIFFERENT) printf("OK\n\n "); else printf("Error\n\n ");
+
+	printf("Test 4 - ");
+	//Test sprawdza odporność funkcji na dwa puste łańcuchy znakowe
+	if (eCompareString("", "")==EQUAL) printf("OK\n\n "); else printf("Error\n\n ");
+
+	printf("Test 5 - ");
+	//Test sprawdza odporność funkcji na pierwszy PUSTY łańcuch znakowy
+	if (eCompareString("", "Klaudia")==DIFFERENT) printf("OK\n\n "); else printf("Error\n\n ");
+
+	printf("Test 6 - ");
+	//Test sprawdza odpornosc funkcji na drugi PUSTY łańcuch znakowy
+	if (eCompareString("Klaudia", "")==DIFFERENT) printf("OK\n\n\n"); else printf("Error\n\n\n");
+}
+//----------------------------------------------------------
+void TestOf_AppendString(void) {
+
+	printf("AppendString\n\n ");
+
+	printf("Test 1 - ");
+	//Test sprawdza poprawne dodanie łańcucha znakowego wedle wymaganego formatu
+	char cAppendingTest1[]="Bajur";
+	AppendString("Klaudia", cAppendingTest1);
+	if (strcmp("BajurKlaudia", cAppendingTest1) ==0) printf("OK\n\n "); else printf("Error\n\n ");
+
+	printf("Test 2 - ");
+	//Test sprawdza odpornosc funkcji na dodanie do docelowego łańucha znakowego pustego łanucha
+	char cAppendingTest2[]="Klaudia";
+	AppendString("", cAppendingTest2);
+	if (strcmp("Klaudia", cAppendingTest2) ==0) printf("OK\n\n "); else printf("Error\n\n ");
+
+	printf("Test 3 - ");
+	//Test sprawdza odporność funkcji na dodawanie łanucha znakowego do pustego łańucha
+	char cAppendingTest3[]="";
+	AppendString("Klaudia", cAppendingTest3);
+	if (strcmp( "Klaudia", cAppendingTest3)==0) printf("OK\n\n\n"); else printf("Error\n\n\n");
+}
+//----------------------------------------------------------
+void TestOf_ReplaceCharactersInString(void) {
+
+	printf("ReplaceCharactersInString\n\n ");
+
+	printf("Test 1 - ");
+	//Test sprawdza poprawnosc dzialajacej funkcji
+	char cOryginalCharTest1[]="Klaudia Bajur";
+	ReplaceCharactersInString(cOryginalCharTest1, 'a', 'O');
+	if (strcmp(cOryginalCharTest1, "KlOudiO BOjur")==0) printf("OK\n\n "); else printf("Error\n\n ");
+
+	printf("Test 2 - ");
+	//Test sprawdza zamiane spacji na znak NULL
+	char cOryginalCharTest2[]=" Klaudia Bajur ";
+	ReplaceCharactersInString(cOryginalCharTest2, ' ', '\0');
+	if (strcmp(cOryginalCharTest2, "\0Klaudia\0Bajur\0")==0) printf("OK\n\n\n"); else printf("Error\n\n\n");
+}
+
+int main(){
+    TestOf_CopyString();
+    TestOf_eCompareString();
+    TestOf_AppendString();
+    TestOf_ReplaceCharactersInString();
+}
