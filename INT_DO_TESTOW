@@ -1,0 +1,22 @@
+int main(void) {
+	
+	printf("TESTY FUNKCJI - LANCUCHY ZNAKOWE - OPERACJE PROSTE\n\n\n");
+
+	TestOf_CopyString();
+	TestOf_eCompareString();
+	TestOf_AppendString();
+	TestOf_ReplaceCharactersInString();
+	
+	printf("TESTY FUNKCJI - LANCUCHY ZNAKOWE - KONWERSJE\n\n\n");
+	
+	TestOf_UIntToHexStr();
+	TestOf_eHexStringToUInt();
+	TestOf_AppendUIntToString();
+	
+	printf("TESTY FUNKCJI - DEKODOWANIE KOMUNIKATOW\n\n\n");
+	
+	TestOf_ucFindTokensInString();
+	TestOf_eStringToKeyword();
+	TestOf_DecodeTokens();
+	TestOf_DecodeMsg();
+}
