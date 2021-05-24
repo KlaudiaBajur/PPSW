@@ -1,0 +1,277 @@
+#define MAX_TOKEN_NR 3
+#define NULL 0
+#define MAX_KEYWORD_NR 3
+#define MAX_KEYWORD_STRING_LTH 10
+
+enum CompResult {DIFFERENT, EQUAL};
+enum Result{OK, ERROR};
+
+enum CompResult eCompareString(char pcStr1[], char pcStr2[]){
+
+	unsigned char ucCounter;
+	for(ucCounter = 0; pcStr1[ucCounter] > 0; ucCounter++){
+        if(pcStr1[ucCounter] != pcStr2[ucCounter]) {
+            return DIFFERENT;
+        }
+	}
+	if(pcStr1[ucCounter] != pcStr2[ucCounter]) {
+        return DIFFERENT;
+	}
+  return EQUAL;
+}
+
+enum Result eHexStringToUInt (char pcStr[], unsigned int *puiValue) {
+
+	unsigned char ucCharacterCounter;
+	unsigned char ucCurrentCharacter;
+
+	*puiValue=0;
+
+	if((pcStr[0]!='0') || (pcStr[1]!='x' || pcStr[2]==NULL)){
+		return ERROR;
+	}
+	for(ucCharacterCounter=2; pcStr[ucCharacterCounter] != NULL; ucCharacterCounter++) {
+
+		if(ucCharacterCounter==6){
+			return ERROR;
+		}
+		ucCurrentCharacter = pcStr[ucCharacterCounter];
+		*puiValue = *puiValue<<4;
+
+		if(ucCurrentCharacter <= '9' & ucCurrentCharacter >= '0'){
+			*puiValue= *puiValue | (ucCurrentCharacter - '0');
+		}
+		else if(ucCurrentCharacter>='A' && ucCurrentCharacter<='F'){
+			*puiValue = *puiValue | (ucCurrentCharacter - 'A' + 10);
+		}
+		else {
+		return ERROR;
+		}
+	}
+  return OK;
+}
+
+void ReplaceCharactersInString(char pcString[],char cOldChar,char cNewChar){
+
+	unsigned char ucCounter;
+	for(ucCounter = 0; pcString[ucCounter] > 0; ++ucCounter){
+		if(pcString[ucCounter] == cOldChar){
+			pcString[ucCounter] = cNewChar;
+		}
+	}
+}
+
+enum KeywordCode {LD, ST, RST};
+
+union TokenValue{
+    enum KeywordCode eKeyword;
+    unsigned int uiNumber;
+    char* pcString;
+};
+
+enum TokenType {KEYWORD, NUMBER, STRING};
+
+struct Token{
+    enum  TokenType  eType;
+    union TokenValue uValue;
+};
+
+struct Token asToken[MAX_TOKEN_NR];
+
+
+struct Keyword{
+    enum KeywordCode eCode;
+    char cString[MAX_KEYWORD_STRING_LTH + 1];
+};
+
+
+
+struct Keyword asKeywordList[MAX_KEYWORD_NR]={
+	{RST,"reset"},
+	{LD, "load" },
+	{ST, "store"}
+};
+
+
+unsigned char ucTokenNr;
+
+enum State{TOKEN, DELIMITER};
+
+
+unsigned char ucFindTokensInString(char *pcString){
+
+    enum State eState=DELIMITER;
+    unsigned char ucTokenNr=0;
+    unsigned char ucCharacterCounter;
+
+    unsigned char ucCurrentCharacter;
+
+     for(ucCharacterCounter=0;;ucCharacterCounter++){
+        ucCurrentCharacter=pcString[ucCharacterCounter];
+        switch(eState){
+            case TOKEN:
+            {
+                if(ucTokenNr==MAX_TOKEN_NR){
+                    return ucTokenNr;
+                }
+                else if(ucCurrentCharacter==NULL){
+                    return ucTokenNr;
+                }
+                else if(ucCurrentCharacter!=' '){
+                   eState=TOKEN;
+                }
+                else{
+                    eState=DELIMITER;
+                }
+                break;
+            }
+            case DELIMITER:
+            {
+                if(ucCurrentCharacter==NULL){
+                    return ucTokenNr;
+                }
+
+                else if(ucCurrentCharacter==' '){
+                  eState=DELIMITER;
+                }
+
+                else{
+                    eState=TOKEN;
+                    asToken[ucTokenNr].uValue.pcString=pcString+ucCharacterCounter;
+                    ucTokenNr++;
+                }
+                break;
+            }
+        }
+    }
+}
+
+enum Result eStringToKeyword (char pcStr[],enum KeywordCode *peKeywordCode){
+    unsigned char ucKeywordCounter;
+    for(ucKeywordCounter=0; ucKeywordCounter< MAX_KEYWORD_NR; ucKeywordCounter++){
+
+        if(EQUAL == eCompareString(asKeywordList[ucKeywordCounter].cString, pcStr)){
+            *peKeywordCode= asKeywordList[ucKeywordCounter].eCode;
+            return OK;
+       }
+    }
+    return ERROR;
+}
+void DecodeTokens(void){
+
+    unsigned char ucTokenCounter;
+    struct Token *psCurrentToken;
+    unsigned int uiTokenValue;
+    enum KeywordCode eTokenCode;
+
+    for(ucTokenCounter = 0; ucTokenCounter < ucTokenNr; ucTokenCounter++){
+        psCurrentToken = &asToken[ucTokenCounter];
+        if(OK == eHexStringToUInt(psCurrentToken->uValue.pcString, &uiTokenValue)){
+            psCurrentToken->eType = NUMBER;
+            psCurrentToken->uValue.uiNumber= uiTokenValue;
+        }
+        else if(OK== eStringToKeyword(psCurrentToken->uValue.pcString, &eTokenCode)){
+            psCurrentToken->eType=KEYWORD;
+            psCurrentToken->uValue.eKeyword=eTokenCode;
+        }
+        else{
+            psCurrentToken->eType=STRING;
+        }
+    }
+}
+
+void DecodeMsg(char *pcString){
+    ucTokenNr= ucFindTokensInString(pcString);
+    ReplaceCharactersInString(pcString, ' ', NULL);
+    DecodeTokens();
+}
+
+void TestOf_ucFindTokensInString() {
+
+	unsigned char ucTokenNumber;
+
+	printf("ucFindTokensInString\n\n ");
+
+	printf("Test 1 - ");
+	//Test sprawdza czy funkcja zwroci prawidlowa ilosc tokenow
+	ucTokenNumber=ucFindTokensInString("0x2222 Klaudia reset");
+	if (ucTokenNumber==3) printf("OK\n\n "); else printf("Error\n\n ");
+
+	printf("Test 2 - ");
+	//Test sprawdza odpornosc funkcji na pusty łańcuch
+	ucTokenNumber=ucFindTokensInString("    ");
+	if (ucTokenNumber==0) printf("OK\n\n "); else printf("Error\n\n ");
+
+	printf("Test 3 - ");
+	//Test sprawdza odpornosc funkcji na delimiter przed pierwszym tokenem
+	ucTokenNumber=ucFindTokensInString("   0x2222 Klaudia ");
+	if (ucTokenNumber==2) printf("OK\n\n "); else printf("Error\n\n ");
+
+	printf("Test 4 - ");
+	//Test sprawdza odpornosc funkcji na wiecej niz jeden delimiter miedzy dwoma tokenami
+	ucTokenNumber=ucFindTokensInString("0x2222   Klaudia      reset");
+	if (ucTokenNumber==3) printf("OK\n\n "); else printf("Error\n\n ");
+
+	printf("Test 5 - ");
+	//za duzo tokenow, (zwraca 3 i ustawia wskazniki na pierwsze 3)
+	char pcTestString[]="0x2222 Klaudia Bajur reset";
+	ucTokenNumber=ucFindTokensInString(pcTestString);
+	if ((ucTokenNumber==3) && (&pcTestString[0]==asToken[0].uValue.pcString)
+			&& (&pcTestString[7]==asToken[1].uValue.pcString)
+			&& (&pcTestString[15]==asToken[2].uValue.pcString)) printf("OK\n\n\n"); else printf("Error\n\n\n");
+}
+//----------------------------------------------------------
+void TestOf_eStringToKeyword() {
+
+	enum KeywordCode eTokenCode;
+
+	printf("eStringToKeyword\n\n ");
+
+	printf("Test 1 - ");
+	//Test sprawdza poprawnosc zwrocenia kodu slowa kluczowego przez funkcje przy podaniu poprawnego słowa kluczowego
+	if (eStringToKeyword("reset", &eTokenCode)==OK) printf("OK\n\n "); else printf("Error\n\n ");
+
+	printf("Test 2 - ");
+	//Test sprawdza poprawność działaniu funkcji gdy podany string nie jest słowem kluczowym
+	if (eStringToKeyword("Klaudia", &eTokenCode)==ERROR) printf("OK\n\n\n"); else printf("Error\n\n\n");
+}
+//----------------------------------------------------------
+void TestOf_DecodeTokens() {
+
+	unsigned char ucTokenNumber;
+
+	char pcSourceTest1[]="0x2222 Klaudia reset";
+
+	printf("DecodeTokens\n\n ");
+
+	printf("Test 1 - ");
+	//Test sprawdza poprawnosc zdekodowania wszystkich tokenow, ustalenie jego typu i wartości
+	ucTokenNumber=ucFindTokensInString(pcSourceTest1);
+	ReplaceCharactersInString(pcSourceTest1,' ',NULL);
+	DecodeTokens();
+	if ((asToken[0].eType==NUMBER) && (asToken[0].uValue.uiNumber==0x2222) &&
+			(asToken[1].eType==STRING) && (&pcSourceTest1[7]==asToken[1].uValue.pcString) &&
+			(asToken[2].eType==KEYWORD) && (asToken[2].uValue.eKeyword==RST)) printf("OK\n\n\n"); else printf("Error\n\n\n");
+}
+//----------------------------------------------------------
+void TestOf_DecodeMsg() {
+
+	char pcToDecode[]="0x3333 Klaudia reset";
+
+	printf("DecodeMsg\n\n ");
+
+	printf("Test 1 - ");
+	//Test sprawdza poprawnosc działania funkcji
+	DecodeMsg(pcToDecode);
+	if ((asToken[0].eType==NUMBER) && (asToken[0].uValue.uiNumber==0x3333) &&
+			(asToken[1].eType==STRING) && (&pcToDecode[7]==asToken[1].uValue.pcString) &&
+			(asToken[2].eType==KEYWORD) && (asToken[2].uValue.eKeyword==RST)) printf("OK\n\n\n"); else printf("Error\n\n\n");
+}
+
+
+int main(){
+	TestOf_DecodeMsg();
+	TestOf_DecodeTokens();
+	TestOf_eStringToKeyword();
+	TestOf_ucFindTokensInString();
+}
