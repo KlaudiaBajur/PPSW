@@ -217,6 +217,15 @@ void TestOf_ucFindTokensInString() {
 	char pcTestString[]="0x2222 Klaudia";
 	ucTokenNumber=ucFindTokensInString(pcTestString);
 	if (ucTokenNumber==2) printf("OK\n\n\n"); else printf("Error\n\n\n");
+	
+	printf("Test 6 - ");
+	//za duzo tokenow, (zwraca 3 i ustawia wskazniki na pierwsze 3)
+	char pcTest6String[]="0x3343 ABDC DEFGH reset";
+	ucTokenNumber=ucFindTokensInString(pcTest6String);
+	if ((ucTokenNumber==3) && (&pcTest6String[0]==asToken[0].uValue.pcString)
+			&& (&pcTest6String[7]==asToken[1].uValue.pcString)
+			&& (&pcTest6String[12]==asToken[2].uValue.pcString)) printf("OK\n\n\n"); else printf("Error\n\n\n");
+
 }
 //----------------------------------------------------------
 void TestOf_eStringToKeyword() {
